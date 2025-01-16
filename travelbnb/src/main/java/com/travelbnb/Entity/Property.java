@@ -1,16 +1,23 @@
 package com.travelbnb.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "property")
-public class Property {
+@JsonSerialize
+public class Property implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -33,13 +40,16 @@ public class Property {
 
     @ManyToOne
     @JoinColumn(name = "country_id")
+    @JsonBackReference
     private Country country;
 
     @ManyToOne
     @JoinColumn(name = "location_id")
+    @JsonBackReference
     private Location location;
 
     @Column(name = "date_added", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime dateAdded;  // it will track when the property was added
 
     @PrePersist

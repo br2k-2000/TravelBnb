@@ -124,6 +124,7 @@ public class BookingServiceImpl implements BookingService {
     public List<Room> getAvailableRooms(long propertyId) {
         return roomRepository.findByPropertyIdAndStatus(propertyId,false);
     }
+
 }
 
 

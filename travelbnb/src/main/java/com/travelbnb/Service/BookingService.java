@@ -12,4 +12,5 @@ public interface BookingService {
 
 
     List<Room> getAvailableRooms(long propertyId);
+
 }
