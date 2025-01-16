@@ -3,12 +3,14 @@ package com.travelbnb.Service.Impl;
 import com.travelbnb.Entity.Country;
 import com.travelbnb.Entity.Location;
 import com.travelbnb.Entity.Property;
+import com.travelbnb.Entity.Room;
 import com.travelbnb.Exception.ResourceNotFoundException;
 import com.travelbnb.Service.PropertyService;
 import com.travelbnb.payload.PropertyDto;
-import com.travelbnb.repository.CountryRepository;
-import com.travelbnb.repository.LocationRepository;
-import com.travelbnb.repository.PropertyRepository;
+import com.travelbnb.repository.*;
+import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -24,11 +26,19 @@ public class PropertyServiceImpl implements PropertyService {
     private LocationRepository locationRepository;
     private CountryRepository countryRepository;
     private PropertyRepository propertyRepository;
+    private RoomRepository roomRepository;
+    private BookingRepository bookingRepository;
+    private ImageRepository imageRepository;
+    private FavouritesRepository favouritesRepository;
 
-    public PropertyServiceImpl(LocationRepository locationRepository, CountryRepository countryRepository, PropertyRepository propertyRepository) {
+    public PropertyServiceImpl(LocationRepository locationRepository, CountryRepository countryRepository, PropertyRepository propertyRepository, RoomRepository roomRepository, BookingRepository bookingRepository, ImageRepository imageRepository, FavouritesRepository favouritesRepository) {
         this.locationRepository = locationRepository;
         this.countryRepository = countryRepository;
         this.propertyRepository = propertyRepository;
+        this.roomRepository = roomRepository;
+        this.bookingRepository = bookingRepository;
+        this.imageRepository = imageRepository;
+        this.favouritesRepository = favouritesRepository;
     }
 
     @Override
@@ -60,13 +70,37 @@ public class PropertyServiceImpl implements PropertyService {
 
     }
 
-
+    @Transactional
     @Override
-    public void deleteProperty(long propertyId) {
-        propertyRepository.deleteById(propertyId);
+    @CacheEvict(value = "properties", key = "#propertyId")
+    public void deleteProperty(Long propertyId) {
+        // Check if the property exists
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property with ID " + propertyId + " does not exist."));
+
+        // Step 1: Delete favourites
+        favouritesRepository.deleteByProperty(property);
+
+        // Get all rooms associated with the property
+        List<Room> rooms = roomRepository.findByProperty(property);
+
+        // Delete bookings associated with each room
+        for (Room room : rooms) {
+            bookingRepository.deleteByRoom(room);
+        }
+
+        // Delete rooms associated with the property
+        roomRepository.deleteByProperty(property);
+
+        // Delete images associated with the property
+        imageRepository.deleteByProperty(property);
+
+        // Finally, delete the property
+        propertyRepository.delete(property);
     }
 
     @Override
+    @Cacheable(value = "properties", key = "#propertyId")
     public PropertyDto getPropertyById(long propertyId) {
         Optional<Property> byId = propertyRepository.findById(propertyId);
         if (byId.isPresent()){
