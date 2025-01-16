@@ -3,7 +3,9 @@ package com.travelbnb.repository;
 import com.travelbnb.Entity.AppUser;
 import com.travelbnb.Entity.Favourites;
 import com.travelbnb.Entity.Property;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,4 +22,8 @@ public interface FavouritesRepository extends JpaRepository<Favourites, Long> {
 
     @Query("Select f from Favourites f where f.appUser=:user")
     List<Favourites> findFavouriteByUser(@Param("user") AppUser appUser);
+
+    @Modifying
+    @Transactional
+    void deleteByProperty(Property property);
 }
