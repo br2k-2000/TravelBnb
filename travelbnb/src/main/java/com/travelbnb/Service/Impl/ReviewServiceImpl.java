@@ -106,7 +106,8 @@ public class ReviewServiceImpl implements ReviewService {
 
         Page<Reviews> all = reviewsRepository.findAll(pageable);
         List<Reviews> content = all.getContent();
-        List<ReviewsDto> collect = content.stream().map(e -> entityToDto(e)).collect(Collectors.toList());
+        List<ReviewsDto> collect;
+        collect = content.stream().map(e -> entityToDto(e)).collect(Collectors.toList());
         return collect;
 
     }
