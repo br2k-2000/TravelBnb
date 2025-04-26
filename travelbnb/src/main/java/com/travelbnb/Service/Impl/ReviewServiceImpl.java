@@ -5,9 +5,12 @@ import com.travelbnb.Entity.Property;
 import com.travelbnb.Entity.Reviews;
 import com.travelbnb.Exception.ResourceNotFoundException;
 import com.travelbnb.Service.ReviewService;
+import com.travelbnb.kafka.payload.ReviewSubmittedEvent;
+import com.travelbnb.kafka.producer.ReviewEventProducer;
 import com.travelbnb.payload.ReviewsDto;
 import com.travelbnb.repository.PropertyRepository;
 import com.travelbnb.repository.ReviewsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,6 +30,8 @@ public class ReviewServiceImpl implements ReviewService {
         this.propertyRepository = propertyRepository;
         this.reviewsRepository = reviewsRepository;
     }
+    @Autowired
+    private ReviewEventProducer reviewEventProducer;
 
     @Override
     public ReviewsDto addReview(AppUser appUser, long propertyId, ReviewsDto reviewsDto) {
@@ -42,6 +47,15 @@ public class ReviewServiceImpl implements ReviewService {
                 Reviews reviews = dtoToEntity(reviewsDto);
                 Reviews save = reviewsRepository.save(reviews);
                 ReviewsDto dto = entityToDto(save);
+                // ✅ Send Kafka event here
+                ReviewSubmittedEvent event = new ReviewSubmittedEvent(
+                        save.getId(),
+                        property.getId(),
+                        appUser.getId(),
+                        save.getDescription(),
+                        save.getRating()
+                );
+                reviewEventProducer.sendReviewEvent(event);
                 return dto;
             } else {
                 throw new ResourceNotFoundException("Rating is greater than 5 ");

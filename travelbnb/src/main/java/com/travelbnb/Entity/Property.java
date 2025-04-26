@@ -40,12 +40,12 @@ public class Property implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "country_id")
-    @JsonBackReference
+    @JsonBackReference("property-country")
     private Country country;
 
     @ManyToOne
     @JoinColumn(name = "location_id")
-    @JsonBackReference
+    @JsonBackReference("property-location")
     private Location location;
 
     @Column(name = "date_added", nullable = false)
